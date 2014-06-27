@@ -1,0 +1,104 @@
+#!/usr/bin/env python
+
+#Current Up To Date Usable Node
+# Every python controller needs these lines
+import roslib 
+roslib.load_manifest('aj')
+import rospy
+from std_msgs.msg import UInt16
+from sensor_msgs.msg import Joy
+from time import sleep
+# The velocity command message
+
+class controller:
+	def __init__(self):
+		self.led_bool = 0
+		self.en_bool = 0
+		self.in_a_bool = 0
+		self.in_b_bool = 0
+
+		self.led_true = 1
+		self.led_false = 2
+		self.en_true = 3
+		self.en_false = 4
+		self.in_a_true = 5
+		self.in_a_false = 6
+		self.in_b_true = 7
+		self.in_b_false = 8
+
+		self.axes = []
+		self.buttons = []
+
+		#Subscribes to /basescan
+		print "start Init"
+		self.switch_1_sub = rospy.Subscriber("/limit_switch_1",UInt16,self.switch_1_callback)
+		self.switch_2_sub = rospy.Subscriber("/limit_switch_2",UInt16,self.switch_2_callback)
+		#self.bool_scan_sub = rospy.Subscriber("/bool_array",UInt16,self.bool_array_callback)
+		
+		self.check_sub = rospy.Subscriber("/check",UInt16,self.check_callback)
+		self.check_val_sub = rospy.Subscriber("/check_val",UInt16,self.check_val_callback)
+		self.joy_sub = rospy.Subscriber("/joy",Joy,self.joy_callback)
+		
+
+		self.pwm_1_pub = rospy.Publisher('/pwm_1', UInt16)
+		self.bool_pub = rospy.Publisher('/bool', UInt16)
+		
+		self.servo_1_pub = rospy.Publisher('/servo_1', UInt16)
+		self.servo_2_pub = rospy.Publisher('/servo_2', UInt16)
+
+		self.servo_1_pub.publish(90)
+		self.servo_2_pub.publish(90)
+
+		print "End Init"
+
+	def joy_callback(self, joy_values): 
+		self.axes = joy_values.axes
+		self.buttons = joy_values.buttons
+
+		print self.axes[3]			
+		print self.axes[4]			
+		if (self.axes[0] > .4):
+			self.bool_pub.publish(self.in_a_true)
+			self.bool_pub.publish(self.in_b_false)
+		if (self.axes[0] < -.4):
+			self.bool_pub.publish(self.in_a_false)
+			self.bool_pub.publish(self.in_b_true)	
+		if (self.axes[0] < .4 and self.axes[0] > -.4):
+			self.bool_pub.publish(self.in_a_false)
+			self.bool_pub.publish(self.in_b_false)
+		if  (self.axes[5] > 0):
+			self.bool_pub.publish(self.en_false)
+		if  (self.axes[5] < 0):
+			self.bool_pub.publish(self.en_true)	
+
+		if (self.axes[3] is not None):
+			servo_1_angle = (((self.axes[3]*-1)+1)*90)
+			self.servo_1_pub.publish(servo_1_angle)
+		if (self.axes[4] is not None):
+			servo_2_angle = ((self.axes[4]+1)*90)
+			self.servo_2_pub.publish(servo_2_angle)	
+
+	def switch_1_callback(self, switch_bool):
+		self.bool_pub.publish(self.in_a_false)
+		self.bool_pub.publish(self.in_b_true)
+		print "Switch 1 Callback"
+	
+	def switch_2_callback(self, switch_bool):
+		self.bool_pub.publish(self.in_a_true)
+		self.bool_pub.publish(self.in_b_false)
+		print "Switch 2 Callback"
+	
+#	def bool_array_callback(self, bool_array):
+
+
+	def check_callback(self, check):
+		self.bool_pub.publish
+		print "check callback"
+		
+	def check_val_callback(self, check_val):
+		print check_val
+
+if __name__ == '__main__':
+	rospy.init_node('aj',log_level=rospy.DEBUG)
+	controller = controller()
+	rospy.spin()
